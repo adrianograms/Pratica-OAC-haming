@@ -158,7 +158,7 @@ unsigned char *haming(char bits[8]) {
 	return byte_arruamdo;
 }
 
-void verification(unsigned char *bytes_arquivo_haming, unsigned char bytes_arquivo_original) {
+unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char bytes_arquivo_original) {
     cout << (int)bytes_arquivo_haming[0] << " " << (int)bytes_arquivo_haming[1] << endl;
     char *inferior = decToBinary(bytes_arquivo_haming[0]);
     char *superior = decToBinary(bytes_arquivo_haming[1]);
@@ -204,6 +204,7 @@ void verification(unsigned char *bytes_arquivo_haming, unsigned char bytes_arqui
 
     if(c1 == 0 && c2 == 0 && c4 == 0 && c8 == 0) {
         cout << "Tudo certo!" << endl;
+        return bytes_arquivo_original;
     }
     else {
         int posicao_mudar = (int)pow(2,0)*c1 + (int)pow(2, 1)*c2 
@@ -212,13 +213,43 @@ void verification(unsigned char *bytes_arquivo_haming, unsigned char bytes_arqui
         cout << posicao_mudar << endl;
         if(posicao_mudar > 12) {
             cout << "Algo esta muito errado!!" << endl;
+            return bytes_arquivo_original;
         }
         else {
+			int valor_somado = 0;
+			switch(posicao_mudar) {
+				
+				case 3:
+					valor_somado = pow(2,0);
+					break;
+				case 5:
+					valor_somado = pow(2,1);
+					break;
+				case 6:
+					valor_somado = pow(2,2);
+					break;
+				case 7:
+					valor_somado = pow(2,3);
+					break;
+				case 9:
+					valor_somado = pow(2,4);
+					break;
+				case 10:
+					valor_somado = pow(2,5);
+					break;
+				case 11:
+					valor_somado = pow(2,6);
+					break;
+				case 12:
+					valor_somado = pow(2,7);
+					break;
+			}
             if(bits_haming[posicao_mudar] == 0) {
                 bits_haming[posicao_mudar] = 1;
             }
             else {
                 bits_haming[posicao_mudar] = 0;
+                valor_somado = -valor_somado;
             }
 
             char g = bits_haming[1]^bits_haming[2]^bits_haming[3]^bits_haming[4]
@@ -227,9 +258,11 @@ void verification(unsigned char *bytes_arquivo_haming, unsigned char bytes_arqui
             
             if(g == bits_haming_arquivo[0]) {
                 cout << "Deu certo poar!" << endl;
+                return bytes_arquivo_original + valor_somado;
             }
             else {
                 cout << "Vish de merda em!!" << endl;
+                return bytes_arquivo_original;
             }
         }
     }
@@ -263,16 +296,23 @@ void reading_teste(string path_haming,string path_original) {
     ifstream input_original(path_original, std::ios::binary);
 
     vector<unsigned char> buffer_haming(istreambuf_iterator<char>(input_haming), {});
-    cout << (int)buffer_haming[4] << endl;
+    //cout << (int)buffer_haming[4] << endl;
     vector<unsigned char> buffer_original(istreambuf_iterator<char>(input_original), {});
-    cout << buffer_haming.size() << endl;
+    cout << buffer_original.size() << endl;
+    
+    input_original.close();
+    input_haming.close();
+    
+    ofstream output_original;
+    output_original.open(path_original, ios::binary);
+    
     int j;
-    for(int i = 0, j= 0; j< buffer_original.size(); i=i+2, j++) {
+    for(int i = 0, j= 0; i< buffer_haming.size(); i=i+2, j++) {
         unsigned char *bytes_arquivo_haming = new unsigned char[2];
         bytes_arquivo_haming[0]  =buffer_haming[i];
         bytes_arquivo_haming[1] = buffer_haming[i+1];
         unsigned char bytes_arquivo_original = buffer_original[j];
-        verification(bytes_arquivo_haming, bytes_arquivo_original);
+        output_original << verification(bytes_arquivo_haming, bytes_arquivo_original);
     }
 }
 
