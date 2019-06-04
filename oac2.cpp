@@ -133,6 +133,14 @@ unsigned char *haming(char bits[8]) {
 	return byte_arruamdo;
 }
 
+/**
+ * @brief 
+ * 
+ * @param bytes_arquivo_haming 
+ * @param bytes_arquivo_original 
+ * @param local_byte 
+ * @return unsigned char 
+ */
 unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char bytes_arquivo_original, int local_byte) {
     char *inferior = decToBinary(bytes_arquivo_haming[0]);
     char *superior = decToBinary(bytes_arquivo_haming[1]);
@@ -166,7 +174,7 @@ unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char by
                             + (int)pow(2, 2)*c4 + (int)pow(2,3)*c8;
 
         //cout << posicao_mudar << endl;
-        if(posicao_mudar >= 12) {
+        if(posicao_mudar > 12) {
             cout << "Posicão maior que tamanho do codigo haming gerado!" << endl;
             return bytes_arquivo_original;
         }
@@ -199,6 +207,7 @@ unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char by
 					valor_somado = pow(2,7);
 					break;
 			}
+	
             if(bits_haming[posicao_mudar] == 0) {
                 bits_haming[posicao_mudar] = 1;
             }
@@ -207,9 +216,18 @@ unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char by
                 valor_somado = -valor_somado;
             }
 
+	        bits_haming[1] = bits_haming[3]^bits_haming[5]^bits_haming[7]^bits_haming[9]^bits_haming[11];
+
+	        bits_haming[2] = bits_haming[3]^bits_haming[6]^bits_haming[7]^bits_haming[10]^bits_haming[11];
+
+	        bits_haming[4] = bits_haming[5]^bits_haming[6]^bits_haming[7]^bits_haming[12];
+
+	        bits_haming[8]= bits_haming[9]^bits_haming[10]^bits_haming[11]^bits_haming[12];
+
             char g = bits_haming[1]^bits_haming[2]^bits_haming[3]^bits_haming[4]
                     ^bits_haming[5]^bits_haming[6]^bits_haming[7]^bits_haming[8]
                     ^bits_haming[9]^bits_haming[10]^bits_haming[11]^bits_haming[12];
+
             
             if(g == bits_haming_arquivo[0]) {
 				cout << "byte arrumado: " << local_byte + 1 << endl;
@@ -217,6 +235,7 @@ unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char by
             }
             else {
                 cout << "Incosistencia detectada, não é possivel consertar o byte: " << local_byte + 1 << endl;
+		cout << posicao_mudar << endl;
                 return bytes_arquivo_original;
             }
         }
@@ -271,7 +290,7 @@ int main(int argc, char *argv[]) {
 			reading_teste("qlq.bin", argv[1]);
 		}
 		else if(argv[2][1] == 'r') {
-				reading_teste("qlq.bin",argv[1]);
+			reading_teste("qlq.bin",argv[1]);
 		}
 	}
     return 0; 
