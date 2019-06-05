@@ -2,8 +2,11 @@
 #include <vector>
 #include <math.h>
 #include <fstream>
+#include <string>
 
 using namespace std;
+
+bool debug = true;
 
 // function to convert decimal to binary 
 char *decToBinary(unsigned char n) 
@@ -27,7 +30,12 @@ char *decToBinary(unsigned char n)
     return binaryNum;
 } 
 
-char *haming2(char bits[8]) {
+/**
+ * @brief Ela vai gerar o codigo haming a partir dos bits originais
+ * @param bits byte original do arquivo
+ * @return char* Retorna um vetor de char's com 13 elementos no total
+ */
+char *gera_haming(char bits[8]) {
     char c1 = bits[0]^bits[1]^bits[3]^bits[4]^bits[6];
 
 	char c2 = bits[0]^bits[2]^bits[3]^bits[5]^bits[6];
@@ -38,6 +46,7 @@ char *haming2(char bits[8]) {
 
 	char g = bits[0]^bits[1]^bits[2]^bits[3]^bits[4]^bits[5]
 	^bits[6]^bits[7]^c1^c2^c4^c8;
+
 
     char *codigo_haming = new char[13];
     for(int i =0; i< 13; i++) {
@@ -70,6 +79,11 @@ char *haming2(char bits[8]) {
     return codigo_haming;
 }
 
+/**
+ * @brief Transforma o haming 
+ * @param bits 
+ * @return unsigned char* 
+ */
 unsigned char *transforma_em_char(char bits[]) {
     unsigned char *bytes = new unsigned char[2];
     bytes[0] = bytes[1] =0;
@@ -84,64 +98,26 @@ unsigned char *transforma_em_char(char bits[]) {
     return bytes;
 }
 
+/**
+ * @brief Cria o codigo haming e converte ele para char para gravar em um arquivo
+ * 
+ * @param bits É o byte original do arquivo convertido em uma lista de char's
+ * @return unsigned char* Retorna os dois char's os quais serão gravados no arquivo haming
+ */
 unsigned char *haming(char bits[8]) {
-    
-	char c1 = bits[0]^bits[1]^bits[3]^bits[4]^bits[6];
-
-	char c2 = bits[0]^bits[2]^bits[3]^bits[5]^bits[6];
-
-	char c4 = bits[1]^bits[2]^bits[3]^bits[7];
-
-	char c8 = bits[4]^bits[5]^bits[6]^bits[7];
-
-	char g = bits[0]^bits[1]^bits[2]^bits[3]^bits[4]^bits[5]
-	^bits[6]^bits[7]^c1^c2^c4^c8;
-
-    unsigned char *byte_arruamdo  = new unsigned char[2];
-
-    char *teste = haming2(bits);
-    unsigned char *teste2 = transforma_em_char(teste);
-    
-    byte_arruamdo[0] = byte_arruamdo[1] = 0;
-
-    for(int i =0; i< 13; i++) {
-        if(i < 8) {
-            if(i == 0) {
-                byte_arruamdo[0] += (unsigned char)pow(2, i)*g;
-            }
-            else if(i == 1) {
-                byte_arruamdo[0] += (unsigned char)pow(2, i)*c1;
-            }
-            else if(i == 2) {
-                byte_arruamdo[0] += (unsigned char)pow(2, i)*c2;
-            }
-            else if(i == 3)
-                    byte_arruamdo[0] += (unsigned char)pow(2, i)*bits[0];
-
-            else if(i == 4)
-                    byte_arruamdo[0] += (unsigned char)pow(2, i)*c4;
-            else
-                byte_arruamdo[0] += (unsigned char)pow(2, i)*bits[i-4];
-        } 
-        else if(i == 8) {
-            byte_arruamdo[1] += (unsigned char)pow(2, i-8)*c8;
-        }
-        else {
-            byte_arruamdo[1] += (unsigned char)pow(2 , i-8)*bits[i-5];
-        }
-    }
-	return byte_arruamdo;
+    char *codigo_haming = gera_haming(bits);
+    return transforma_em_char(codigo_haming);
 }
 
 /**
- * @brief 
+ * @brief Verificação se o codigo haming armazenado é compativel com o codigo haming gerado pelo arquivo original,e se não tenta consertar
  * 
- * @param bytes_arquivo_haming 
- * @param bytes_arquivo_original 
- * @param local_byte 
- * @return unsigned char 
+ * @param bytes_arquivo_haming Bytes do arquivo original, eles vem em formato de char e são dois, pois o codigo haming gera 13 bits
+ * @param byte_arquivo_original Byte do arquivo original, é apenas um e em formato char
+ * @param local_byte Diz o local do byte no buffer
+ * @return unsigned char Retorna um char o qual será gravado no arquivo original
  */
-unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char bytes_arquivo_original, int local_byte) {
+unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char byte_arquivo_original, int local_byte) {
     char *inferior = decToBinary(bytes_arquivo_haming[0]);
     char *superior = decToBinary(bytes_arquivo_haming[1]);
 
@@ -156,9 +132,9 @@ unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char by
         }
     }
 
-    char *bits_originais = decToBinary(bytes_arquivo_original);
+    char *bits_originais = decToBinary(byte_arquivo_original);
 
-    char *bits_haming = haming2(bits_originais);
+    char *bits_haming = gera_haming(bits_originais);
 
     char c1 = bits_haming[1]^bits_haming_arquivo[1];
     char c2 = bits_haming[2]^bits_haming_arquivo[2];
@@ -166,19 +142,19 @@ unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char by
     char c8 = bits_haming[8]^bits_haming_arquivo[8];
 
     if(c1 == 0 && c2 == 0 && c4 == 0 && c8 == 0) {
-        //cout << "Tudo certo!" << endl;
-        return bytes_arquivo_original;
+        return byte_arquivo_original;
     }
     else {
         int posicao_mudar = (int)pow(2,0)*c1 + (int)pow(2, 1)*c2 
                             + (int)pow(2, 2)*c4 + (int)pow(2,3)*c8;
 
-        //cout << posicao_mudar << endl;
         if(posicao_mudar > 12) {
             cout << "Posicão maior que tamanho do codigo haming gerado!" << endl;
-            return bytes_arquivo_original;
+            return byte_arquivo_original;
         }
         else {
+            cout << endl << "Posicao a ser alterada e " << posicao_mudar 
+            << " do byte " <<  local_byte <<endl;
 			int valor_somado = 0;
 			switch(posicao_mudar) {
 				
@@ -230,18 +206,24 @@ unsigned char verification(unsigned char *bytes_arquivo_haming, unsigned char by
 
             
             if(g == bits_haming_arquivo[0]) {
-				cout << "byte arrumado: " << local_byte + 1 << endl;
-                return bytes_arquivo_original + valor_somado;
+				cout << "byte arrumado com sucesso!" << endl;
+                return byte_arquivo_original + valor_somado;
             }
             else {
                 cout << "Incosistencia detectada, não é possivel consertar o byte: " << local_byte + 1 << endl;
 		cout << posicao_mudar << endl;
-                return bytes_arquivo_original;
+                return byte_arquivo_original;
             }
         }
     }
 }
 
+/**
+ * @brief Lê o arquivo original gera o haming e grava no arquivo destino
+ * 
+ * @param path_src Caminho do arquivo original
+ * @param path_dest Caminho do arquivo destino
+ */
 void reading_char(string path_src,string path_dest) {
     ofstream output;
     output.open(path_dest, ios::binary);
@@ -255,11 +237,18 @@ void reading_char(string path_src,string path_dest) {
         output << aux[1];
         
     }
+    cout << "Gravação feita com sucesso!" << endl;
     output.close();
     input.close();
 }
 
-void reading_teste(string path_haming,string path_original) {
+/**
+ * @brief Lê o arquivo original e verifica com o arquivo haming
+ * 
+ * @param path_haming Caminho do arquivo haming
+ * @param path_original Caminho do arquivo original
+ */
+void reading_verification(string path_haming,string path_original) {
     ifstream input_haming(path_haming, std::ios::binary);
     ifstream input_original(path_original, std::ios::binary);
 
@@ -277,20 +266,38 @@ void reading_teste(string path_haming,string path_original) {
         unsigned char *bytes_arquivo_haming = new unsigned char[2];
         bytes_arquivo_haming[0]  =buffer_haming[i];
         bytes_arquivo_haming[1] = buffer_haming[i+1];
-        unsigned char bytes_arquivo_original = buffer_original[j];
-        output_original << verification(bytes_arquivo_haming, bytes_arquivo_original,j);
+        unsigned char byte_arquivo_original = buffer_original[j];
+        output_original << verification(bytes_arquivo_haming, byte_arquivo_original,j);
     }
+}
+
+/**
+ * @brief Gera o nome do arquivo que vai ser o arquivo haming
+ * 
+ * @param nome_original Nome do arquivo original
+ * @return string Retorna o nome do arquivo com o codigo haming
+ */
+string gerando_nome_arquivo(char *nome_original) {
+    string aux = nome_original;
+    string terminacao = ".sotw";
+    for(int i = 0; i< aux.size(); i++) {
+        if(aux[i] == '.') {
+            return (aux.substr(0,i) + terminacao);
+        }
+    }
+
 }
 
 int main(int argc, char *argv[]) {
 	if(argc >= 2) {
+        string arquivo_haming = gerando_nome_arquivo(argv[1]);
 		if(argv[2][1] == 'w')
 		{
-			reading_char(argv[1], "qlq.bin");
-			reading_teste("qlq.bin", argv[1]);
+			reading_char(argv[1], arquivo_haming);
+			reading_verification(arquivo_haming, argv[1]);
 		}
 		else if(argv[2][1] == 'r') {
-			reading_teste("qlq.bin",argv[1]);
+			reading_verification(arquivo_haming,argv[1]);
 		}
 	}
     return 0; 
